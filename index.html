@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>UniGib Student Face Registration</title>
+  <link rel="icon" type="image/x-icon" href="assets/favicon.ico">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    :root {
+      --uni-red: #d1111b;
+      --uni-red-light: #f05252;
+      --bg-light: #ffffff;
+      --text-main: #111827;
+      --text-muted: #6b7280;
+      --border-gray: #e5e7eb;
+      --bg-chip: #fef2f2;
+    }
+
+    * {
+      box-sizing: border-box;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-light);
+      color: var(--text-main);
+    }
+
+    header {
+      width: 100%;
+      background: var(--uni-red);
+      color: #fff;
+      padding: 12px 20px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.18);
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    header img.logo {
+      height: 60px;
+      width: auto;
+    }
+
+    header .header-text h1 {
+      margin: 0;
+      font-size: 1.2rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    header .header-text span {
+      font-size: 0.8rem;
+      opacity: 0.9;
+    }
+
+    main {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: radial-gradient(circle at top left, rgba(209, 17, 27, 0.15), transparent 55%);
+    }
+
+    .card {
+      background: #fff;
+      max-width: 450px;
+      width: 100%;
+      border-radius: 16px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+      padding: 24px 24px 28px;
+      margin: 16px;
+      border-top: 5px solid var(--uni-red);
+    }
+
+    .card h2 {
+      margin: 0 0 4px;
+      font-size: 1.4rem;
+      text-align: center;
+      color: var(--uni-red);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .card p.subtitle {
+      margin: 0 0 20px;
+      font-size: 0.9rem;
+      text-align: center;
+      color: var(--text-muted);
+    }
+
+    .input-group {
+      margin-bottom: 14px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.85rem;
+      margin-bottom: 4px;
+      color: #374151;
+      font-weight: 600;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid var(--border-gray);
+      font-size: 0.95rem;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    input[type="text"]:focus {
+      outline: none;
+      border-color: var(--uni-red);
+      box-shadow: 0 0 0 3px rgba(209, 17, 27, 0.2);
+    }
+
+    #cameraSection {
+      margin-top: 16px;
+      border-radius: 12px;
+      border: 1px dashed #fecaca;
+      padding: 12px;
+      background: var(--bg-chip);
+    }
+
+    #cameraHeader {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #b91c1c;
+    }
+
+    #cameraHeader small {
+      font-size: 0.7rem;
+      color: #9ca3af;
+      font-weight: normal;
+    }
+
+    #video,
+    #photoPreview {
+      width: 100%;
+      border-radius: 10px;
+      background: #000;
+      max-height: 260px;
+      object-fit: cover;
+    }
+
+    #canvas {
+      display: none;
+    }
+
+    .button-row {
+      margin-top: 10px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      border-radius: 999px;
+      border: none;
+      padding: 8px 14px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      white-space: nowrap;
+      transition: transform 0.08s ease, box-shadow 0.08s ease, background 0.15s;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.5;
+      box-shadow: none;
+      transform: none;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--uni-red), var(--uni-red-light));
+      color: #fff;
+      box-shadow: 0 8px 18px rgba(209, 17, 27, 0.35);
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 10px 22px rgba(209, 17, 27, 0.45);
+    }
+
+    .btn-secondary {
+      background: #f3f4f6;
+      color: var(--text-main);
+      border: 1px solid var(--border-gray);
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+      background: #e5e7eb;
+    }
+
+    .btn-submit {
+      width: 100%;
+      margin-top: 18px;
+      padding: 10px 14px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .status {
+      margin-top: 10px;
+      font-size: 0.85rem;
+      min-height: 18px;
+    }
+
+    .status.error {
+      color: #b91c1c;
+    }
+
+    .status.success {
+      color: #15803d;
+    }
+
+    .hint {
+      margin-top: 6px;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .divider {
+      margin: 20px 0 12px;
+      border: 0;
+      border-top: 1px solid var(--border-gray);
+    }
+
+    .login-section-title {
+      font-size: 0.9rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--uni-red);
+      margin-bottom: 6px;
+      text-align: center;
+    }
+
+    .login-description {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      text-align: center;
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <img class="logo" src="assets/unigib-logo.png" alt="University of Gibraltar logo" />
+    <div class="header-text">
+      <h1>University of Gibraltar</h1>
+      <span>Student Face Registration</span>
+    </div>
+  </header>
+
+  <main>
+    <div class="card">
+      <h2>Register Your Face</h2>
+      <p class="subtitle">Allow camera access, capture your face, enter your name, and submit.</p>
+
+      <form id="registrationForm">
+        <div class="input-group">
+          <label for="firstName">First name</label>
+          <input
+            id="firstName"
+            name="firstName"
+            type="text"
+            required
+            autocomplete="given-name"
+            placeholder="e.g. John"
+          />
+        </div>
+
+        <div class="input-group">
+          <label for="lastName">Last name</label>
+          <input
+            id="lastName"
+            name="lastName"
+            type="text"
+            required
+            autocomplete="family-name"
+            placeholder="e.g. Doe"
+          />
+        </div>
+
+        <section id="cameraSection">
+          <div id="cameraHeader">
+            <span>Face capture</span>
+            <small>Camera data stays on this page until you submit</small>
+          </div>
+
+          <video id="video" autoplay playsinline></video>
+          <img id="photoPreview" alt="Captured face preview" style="display:none;" />
+          <canvas id="canvas"></canvas>
+
+          <div class="button-row">
+            <button type="button" id="startCameraBtn" class="btn-secondary">
+              Enable camera
+            </button>
+            <button type="button" id="captureBtn" class="btn-primary" disabled>
+              Capture photo
+            </button>
+            <button type="button" id="retakeBtn" class="btn-secondary" style="display:none;">
+              Retake
+            </button>
+          </div>
+
+          <p class="hint">
+            If your device blocks camera access, enable it in your browser settings and reload.
+          </p>
+        </section>
+
+        <button type="submit" class="btn-primary btn-submit">
+          Submit registration
+        </button>
+
+        <hr class="divider" />
+
+        <div>
+          <div class="login-section-title">Face Login</div>
+          <p class="login-description">
+            Capture your face above and then click the button below to log in using facial recognition.
+          </p>
+          <button type="button" id="loginBtn" class="btn-secondary btn-submit" disabled>
+            Login with face
+          </button>
+        </div>
+
+        <div id="status" class="status"></div>
+      </form>
+    </div>
+  </main>
+
+  <script>
+    const UPLOAD_URL = "/upload";
+    const LOGIN_URL = "https://xfe7vgrrmd.execute-api.eu-west-2.amazonaws.com/dev/login";
+
+    const startCameraBtn = document.getElementById("startCameraBtn");
+    const captureBtn = document.getElementById("captureBtn");
+    const retakeBtn = document.getElementById("retakeBtn");
+    const loginBtn = document.getElementById("loginBtn");
+    const video = document.getElementById("video");
+    const canvas = document.getElementById("canvas");
+    const photoPreview = document.getElementById("photoPreview");
+    const form = document.getElementById("registrationForm");
+    const statusEl = document.getElementById("status");
+    const firstNameInput = document.getElementById("firstName");
+    const lastNameInput = document.getElementById("lastName");
+
+    let stream = null;
+    let capturedBlob = null;
+    let capturedBase64 = null;
+
+    function setStatus(message, type = "") {
+      statusEl.textContent = message || "";
+      statusEl.className = "status" + (type ? " " + type : "");
+    }
+
+    async function startCamera() {
+      try {
+        setStatus("");
+        capturedBlob = null;
+        capturedBase64 = null;
+        loginBtn.disabled = true;
+        photoPreview.style.display = "none";
+        video.style.display = "block";
+        retakeBtn.style.display = "none";
+
+        stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        video.srcObject = stream;
+        captureBtn.disabled = false;
+        startCameraBtn.disabled = true;
+      } catch (err) {
+        console.error(err);
+        setStatus("Unable to access camera. Please check your browser permissions.", "error");
+      }
+    }
+
+    function stopCamera() {
+      if (stream) {
+        stream.getTracks().forEach((t) => t.stop());
+        stream = null;
+      }
+      video.srcObject = null;
+      startCameraBtn.disabled = false;
+      captureBtn.disabled = true;
+    }
+
+    function capturePhoto() {
+      if (!stream) {
+        setStatus("Camera is not active. Click 'Enable camera' first.", "error");
+        return;
+      }
+
+      const videoWidth = video.videoWidth || 640;
+      const videoHeight = video.videoHeight || 480;
+
+      canvas.width = videoWidth;
+      canvas.height = videoHeight;
+
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(video, 0, 0, videoWidth, videoHeight);
+
+      const dataUrl = canvas.toDataURL("image/jpeg", 0.9);
+      const parts = dataUrl.split(",");
+      capturedBase64 = parts.length > 1 ? parts[1] : null;
+
+      if (!capturedBase64) {
+        setStatus("Failed to capture image. Please try again.", "error");
+        return;
+      }
+
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) {
+            setStatus("Failed to capture image. Please try again.", "error");
+            return;
+          }
+          capturedBlob = blob;
+
+          const url = URL.createObjectURL(blob);
+          photoPreview.src = url;
+          photoPreview.style.display = "block";
+          video.style.display = "none";
+
+          retakeBtn.style.display = "inline-flex";
+          loginBtn.disabled = false;
+          setStatus("Photo captured. You can register or log in.", "success");
+        },
+        "image/jpeg",
+        0.9
+      );
+    }
+
+    function retakePhoto() {
+      capturedBlob = null;
+      capturedBase64 = null;
+      loginBtn.disabled = true;
+      photoPreview.style.display = "none";
+      video.style.display = "block";
+      setStatus("");
+    }
+
+    function buildSafeName(text) {
+      return text.trim().toLowerCase().replace(/[^a-z0-9]+/g, "");
+    }
+
+    async function handleSubmit(event) {
+      event.preventDefault();
+      setStatus("");
+
+      const firstNameRaw = firstNameInput.value;
+      const lastNameRaw = lastNameInput.value;
+
+      if (!firstNameRaw.trim() || !lastNameRaw.trim()) {
+        setStatus("Please enter both first and last names.", "error");
+        return;
+      }
+
+      if (!capturedBlob) {
+        setStatus("Please capture a photo before submitting.", "error");
+        return;
+      }
+
+      const firstNameKey = buildSafeName(firstNameRaw);
+      const lastNameKey = buildSafeName(lastNameRaw);
+
+      if (!firstNameKey || !lastNameKey) {
+        setStatus("Names must contain at least one letter or number.", "error");
+        return;
+      }
+
+      const fileName = `${firstNameKey}_${lastNameKey}.jpg`;
+
+      const formData = new FormData();
+      formData.append("firstname", firstNameRaw.trim());
+      formData.append("lastname", lastNameRaw.trim());
+      formData.append("photo", capturedBlob, fileName);
+
+      const submitBtn = form.querySelector('button[type="submit"]');
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Submitting...";
+      setStatus("Uploading photo…", "success");
+
+      try {
+        const response = await fetch(UPLOAD_URL, {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!response.ok) {
+          throw new Error(`Server responded with ${response.status}`);
+        }
+
+        setStatus("Registration submitted successfully!", "success");
+      } catch (err) {
+        console.error(err);
+        setStatus("Failed to submit registration. Please try again.", "error");
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Submit registration";
+      }
+    }
+
+    async function handleLogin() {
+      setStatus("");
+
+      if (!capturedBase64) {
+        setStatus("Please capture a photo before logging in.", "error");
+        return;
+      }
+
+      loginBtn.disabled = true;
+      const originalText = loginBtn.textContent;
+      loginBtn.textContent = "Logging in…";
+      setStatus("Attempting face login…", "success");
+
+      try {
+        const response = await fetch(LOGIN_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ image: capturedBase64 }),
+        });
+
+        let data = null;
+        try {
+          data = await response.json();
+        } catch (_) {}
+
+        if (!response.ok) {
+          const msg = (data && data.message) || `Server responded with ${response.status}`;
+          throw new Error(msg);
+        }
+
+        const msg = (data && (data.message || data.result)) || "Login successful.";
+        setStatus(msg, "success");
+      } catch (err) {
+        console.error(err);
+        setStatus("Login failed. Please try again.", "error");
+      } finally {
+        loginBtn.disabled = false;
+        loginBtn.textContent = originalText;
+      }
+    }
+
+    startCameraBtn.addEventListener("click", startCamera);
+    captureBtn.addEventListener("click", capturePhoto);
+    retakeBtn.addEventListener("click", retakePhoto);
+    form.addEventListener("submit", handleSubmit);
+    loginBtn.addEventListener("click", handleLogin);
+
+    window.addEventListener("beforeunload", stopCamera);
+  </script>
+</body>
+</html>
