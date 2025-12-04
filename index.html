@@ -347,9 +347,25 @@
     </div>
   </main>
 
+  <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1462.0.min.js"></script>
+
   <script>
-    const UPLOAD_URL = "/upload";
-    const LOGIN_URL = "https://xfe7vgrrmd.execute-api.eu-west-2.amazonaws.com/dev/login";
+    const COGNITO_IDENTITY_POOL_ID = "eu-west-2:3491ff03-dc00-4d89-8c73-20a942ae516b"; 
+    const S3_BUCKET_NAME = "facer3cognitionbucket";
+    const S3_REGION = "eu-west-2";
+    
+    const LOGIN_URL = "https://xfe7vgrrmd.execute-api.eu-west-2.amazonaws.com/prod/login"; 
+
+    AWS.config.region = S3_REGION;
+    AWS.config.credentials = new AWS.CognitoIdentityCredentials({
+        IdentityPoolId: COGNITO_IDENTITY_POOL_ID,
+    });
+    
+    const s3 = new AWS.S3({
+      apiVersion: '2006-03-01',
+      params: { Bucket: S3_BUCKET_NAME }
+    });
+
 
     const startCameraBtn = document.getElementById("startCameraBtn");
     const captureBtn = document.getElementById("captureBtn");
@@ -374,6 +390,8 @@
 
     async function startCamera() {
       try {
+        if (stream) { stopCamera(); }
+
         setStatus("");
         capturedBlob = null;
         capturedBase64 = null;
@@ -387,7 +405,7 @@
         captureBtn.disabled = false;
         startCameraBtn.disabled = true;
       } catch (err) {
-        console.error(err);
+        console.error("Camera error:", err);
         setStatus("Unable to access camera. Please check your browser permissions.", "error");
       }
     }
@@ -408,6 +426,11 @@
         return;
       }
 
+      if (video.readyState < 2) {
+         setStatus("Video stream not ready. Please wait a moment.", "error");
+         return;
+      }
+
       const videoWidth = video.videoWidth || 640;
       const videoHeight = video.videoHeight || 480;
 
@@ -422,14 +445,14 @@
       capturedBase64 = parts.length > 1 ? parts[1] : null;
 
       if (!capturedBase64) {
-        setStatus("Failed to capture image. Please try again.", "error");
+        setStatus("Failed to capture Base64 image.", "error");
         return;
       }
 
       canvas.toBlob(
         (blob) => {
           if (!blob) {
-            setStatus("Failed to capture image. Please try again.", "error");
+            setStatus("Failed to create Blob for upload.", "error");
             return;
           }
           capturedBlob = blob;
@@ -442,6 +465,7 @@
           retakeBtn.style.display = "inline-flex";
           loginBtn.disabled = false;
           setStatus("Photo captured. You can register or log in.", "success");
+          stopCamera(); 
         },
         "image/jpeg",
         0.9
@@ -454,7 +478,8 @@
       loginBtn.disabled = true;
       photoPreview.style.display = "none";
       video.style.display = "block";
-      setStatus("");
+      retakeBtn.style.display = "none";
+      startCamera(); 
     }
 
     function buildSafeName(text) {
@@ -480,38 +505,30 @@
 
       const firstNameKey = buildSafeName(firstNameRaw);
       const lastNameKey = buildSafeName(lastNameRaw);
-
-      if (!firstNameKey || !lastNameKey) {
-        setStatus("Names must contain at least one letter or number.", "error");
-        return;
-      }
-
       const fileName = `${firstNameKey}_${lastNameKey}.jpg`;
-
-      const formData = new FormData();
-      formData.append("firstname", firstNameRaw.trim());
-      formData.append("lastname", lastNameRaw.trim());
-      formData.append("photo", capturedBlob, fileName);
 
       const submitBtn = form.querySelector('button[type="submit"]');
       submitBtn.disabled = true;
-      submitBtn.textContent = "Submitting...";
-      setStatus("Uploading photo…", "success");
+      submitBtn.textContent = "Registering...";
+      setStatus(`Uploading photo to S3...`, "success");
 
       try {
-        const response = await fetch(UPLOAD_URL, {
-          method: "POST",
-          body: formData,
-        });
+        const uploadParams = {
+            Key: fileName, 
+            Body: capturedBlob, 
+            ContentType: 'image/jpeg' 
+        };
 
-        if (!response.ok) {
-          throw new Error(`Server responded with ${response.status}`);
-        }
+        await s3.upload(uploadParams).promise();
 
-        setStatus("Registration submitted successfully!", "success");
+        setStatus("Registration successful! Face indexing has been started by AWS Lambda.", "success");
       } catch (err) {
-        console.error(err);
-        setStatus("Failed to submit registration. Please try again.", "error");
+        console.error("S3 Upload Error:", err);
+        let errorMessage = "Registration failed. Check browser console for S3/IAM errors.";
+        if (err.code === 'AccessDenied') {
+             errorMessage = "Upload Failed: Access Denied. Check your Cognito Role and S3 Bucket Policy (CORS).";
+        }
+        setStatus(errorMessage, "error");
       } finally {
         submitBtn.disabled = false;
         submitBtn.textContent = "Submit registration";
@@ -529,13 +546,13 @@
       loginBtn.disabled = true;
       const originalText = loginBtn.textContent;
       loginBtn.textContent = "Logging in…";
-      setStatus("Attempting face login…", "success");
+      setStatus("Attempting face login via API Gateway…", "success");
 
       try {
         const response = await fetch(LOGIN_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ image: capturedBase64 }),
+          body: JSON.stringify({ image: capturedBase64 }), 
         });
 
         let data = null;
@@ -548,11 +565,11 @@
           throw new Error(msg);
         }
 
-        const msg = (data && (data.message || data.result)) || "Login successful.";
-        setStatus(msg, "success");
+        const userName = data.user || 'Student';
+        setStatus(`Welcome, ${userName}! Login successful.`, "success");
       } catch (err) {
-        console.error(err);
-        setStatus("Login failed. Please try again.", "error");
+        console.error("Login Error:", err);
+        setStatus(`Login failed: ${err.message}.`, "error");
       } finally {
         loginBtn.disabled = false;
         loginBtn.textContent = originalText;
@@ -562,7 +579,7 @@
     startCameraBtn.addEventListener("click", startCamera);
     captureBtn.addEventListener("click", capturePhoto);
     retakeBtn.addEventListener("click", retakePhoto);
-    form.addEventListener("submit", handleSubmit);
+    form.addEventListener("submit", handleSubmit); 
     loginBtn.addEventListener("click", handleLogin);
 
     window.addEventListener("beforeunload", stopCamera);
